@@ -9,13 +9,15 @@ import settings
 import math
 from settings import CALIBRATION_FILE_NAME, PERSPECTIVE_FILE_NAME
 
+# menghitung pergeseran pusat polinomial dalam satuan meter
 def get_center_shift(coeffs, img_size, pixels_per_meter):
     return np.polyval(coeffs, img_size[1]/pixels_per_meter[1]) - (img_size[0]//2)/pixels_per_meter[0]
 
+# menghitung kelengkungan polinomial
 def get_curvature(coeffs, img_size, pixels_per_meter):
     return ((1 + (2*coeffs [0]*img_size[1]/pixels_per_meter[1] + coeffs[1])**2)**1.5) / np.absolute(2*coeffs[0])
 
-# Class that finds line in a mask
+# menghitung garis jalur 
 class LaneLineFinder:
     def __init__(self, img_size, pixels_per_meter, center_shift):
         self.found = False
@@ -32,19 +34,22 @@ class LaneLineFinder:
         self.first = True
         self.stddev = 0
 
+    # mengatur ulang variabel garis jalur
     def reset_lane_line(self):
         self.found = False
         self.poly_coeffs = np.zeros(3, dtype=np.float32)
         self.line_mask[:] = 1
         self.first = True
 
+    # mengatur garis jalur yang hilang
     def one_lost(self):
-        self.still_to_find = 5
+        self.still_to_find = 5 # mengatur ulang menjadi 5 jika garis jalur telah ditemukan sebelumnya
         if self.found:
             self.num_lost += 1
-            if self.num_lost >= 7:
-                self.reset_lane_line()
+            if self.num_lost >= 7: # jika garis jalur ditemukan dan sudah hilang selama >= 7 kali
+                self.reset_lane_line() # mengatur ulang garis jalur
 
+    # mengatur garis jalur yang ditemukan
     def one_found(self):
         self.first = False
         self.num_lost = 0
@@ -53,6 +58,7 @@ class LaneLineFinder:
             if self.still_to_find <= 0:
                 self.found = True
     
+    # menyesuaikan garis jalur berdasarkan mask yang diberikan
     def fit_lane_line(self, mask):
         y_coor, x_coor = np.where(mask)
         y_coor = y_coor.astype(np.float32)/self.pixels_per_meter[1]
@@ -85,12 +91,14 @@ class LaneLineFinder:
         
         self.poly_coeffs = np.mean(self.coeff_history, axis = 1)
 
+    # mengambil titik titik garis jalur utama
     def get_line_points(self):
         y = np.array(range(0, self.img_size[1]+1, 10), dtype=np.float32)/self.pixels_per_meter[1]
         x = np.polyval(self.poly_coeffs, y)*self.pixels_per_meter[0]
         y *= self.pixels_per_meter[1]
         return np.array([x, y], dtype=np.int32).T
     
+    # mengambil titik titik garis jalur lainnya
     def get_other_line_points(self):
         pts = self.get_line_points()
         pts[:, 0] = pts[:, 0] - 2*self.shift*self.pixels_per_meter[0]
