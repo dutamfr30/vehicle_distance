@@ -16,8 +16,8 @@ class DigitalFilter:
         self.len = len(vector)
         self.b = b.reshape(-1, 1)
         self.a = a.reshape(-1, 1)
-        self.input_history = np.tile(np.array(vector, dtype=np.float64), (len(self.b), 1))
-        self.output_history = np.tile(np.array(vector, dtype=np.float64), (len(self.a), 1))
+        self.input_history = np.tile(vector.astype(np.float64), (len(self.b), 1))
+        self.output_history = np.tile(vector.astype(np.float64), (len(self.a), 1))
         self.old_output = np.copy(self.output_history[0])
 
     def output(self):
@@ -43,10 +43,10 @@ def area(bbox):
 class Car:
     def __init__(self, bounding_box, first=False, warped_size=None, transform_matrix=None, pixel_per_meter=None):
         self.warped_size = warped_size
-        self.transform_matrix = transform_matrix
+        self.trasform_matrix = transform_matrix
         self.pixel_per_meter = pixel_per_meter
         self.has_position = self.warped_size is not None \
-                            and self.transform_matrix is not None \
+                            and self.trasform_matrix is not None \
                             and self.pixel_per_meter is not None
         self.filtered_bbox = DigitalFilter(bounding_box, 1/21*np.ones(21, dtype=np.float32), np.array([1.0, 0]))
         self.position = DigitalFilter(self.calculate_position(bounding_box), 1/21*np.ones(21, dtype=np.float32), np.array([1.0, 0]))
@@ -59,7 +59,7 @@ class Car:
     def calculate_position(self, bbox):
         if (self.has_position):
             pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
-            dst = cv2.perspectiveTransform(pos, self.transform_matrix).reshape(-1, 1)
+            dst = cv2.perspectiveTransform(pos, self.trasform_matrix).reshape(-1, 1)
             return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter)
         else:
             return np.array([0])
@@ -97,7 +97,7 @@ class Car:
         self.filtered_bbox.skip_one()
         self.position.skip_one()
 
-    def draw(self, img, color=(0, 255, 0), thickness=2):
+    def draw(self, img, color=(255, 0, 0), thickness=2):
         if self.display:
             window = self.filtered_bbox.output().astype(np.uint32)
             cv2.rectangle(img, (window[0], window[1]), (window[2], window[3]), color, thickness)
@@ -119,7 +119,7 @@ class CarDetector:
         self.cam_matrix = cam_matrix
         self.dist_coeffs = dist_coeffs
         self.cars = []
-        self.first = True
+        self.fps = 25
         
 
     # def POINTS(event, x,y,flags,param):
@@ -131,45 +131,31 @@ class CarDetector:
     # cv2.setMouseCallback('YOLO V8', POINTS)
 
     def detect(self, img):
-        car_windows = []
-        frame = cv2.undistort(img, self.cam_matrix, self.dist_coeffs)
-        results = model.predict(frame, classes=classes, conf=conf)  
-        bboxes = [] 
-        for r in results:
-            # annotator = Annotator(frame)
-            boxes = r.boxes
-            for box in boxes:
-                b = box.xyxy[0]
-                # c = box.cls
-                bbox = np.array([np.int(b[0]), np.int(b[1]), np.int(b[2]), np.int(b[3])], dtype=np.int64)
-                # annotator.box_label(b, model.names[int(c)], color=(0, 255, 0), txt_color=(255, 9, 9))
-                print('b', b)
-                # print('c', c)
-                print('bbox', bbox)
-                bboxes.append(bbox)
+        # while True:
+        #     ret, image = img.read()
+        #     if not ret:
+        #         break
+        #     # waktu_mulai = time.time()
+            frame = cv2.undistort(img, cam_matrix, dist_coeffs)
+            # frame = cv2.resize(img, (640, 480))
+            results = model.predict(frame, classes=classes, conf=conf)  
+            for r in results:
+                annotator = Annotator(frame)
 
-        print('bboxes', bboxes)
-        # frame = annotator.result()
-        cv2.imshow('YOLO V8', frame)
-
-        for car in self.cars:
-            car.update_car(bboxes)
-
-        for bbox in bboxes:
-            self.cars.append(Car(bbox, self.warped_size, self.pixel_per_meter, self.transform_matrix))
-
-        tmp_cars = []
-        for car in self.cars:
-            if car.found:
-                tmp_cars.append(car)
-        self.cars = tmp_cars
-        self.first = False
-
-    def draw(self, img):
-        i2 = np.copy(img)
-        for car in self.cars:
-            car.draw(i2)
-        return i2
+                boxes = r.boxes
+                for box in boxes:
+                    b = box.xyxy[0]
+                    c = box.cls
+                    annotator.box_label(b, model.names[int(c)], color=(0, 255, 0), txt_color=(255, 9, 9))
+                    print(b)
+            frame = annotator.result()
+            cv2.imshow('YOLO V8', frame)
+              # print("waktu", time.time()- waktu_mulai)
+        #     key = cv2.waitKey(0)
+        #     if key & 0xFF == ord('q'):
+        #         break
+        # img.release()
+        # cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
@@ -198,7 +184,7 @@ if __name__ == "__main__":
         img = cv2.undistort(img, cam_matrix, dist_coeffs)
         car_detector.detect(img)
         lane_finder.find_lane(img, distorted=False, reset=reset)
-        return lane_finder.draw_lane_weighted(car_detector.draw(img))
+        return lane_finder.draw_lane_weighted(img)
 
     for file in video_files:
         lf = Lane_Finder(img_size=ORIGINAL_SIZE, warped_size=UNWARPED_SIZE, cam_matrix=cam_matrix, dist_coeffs=dist_coeffs, 
@@ -211,9 +197,9 @@ if __name__ == "__main__":
             ret, image = video_capture.read()
             if not ret:
                 break
-            # process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-            output = process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-            cv2.imshow('YOLO V8', process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
+            process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
+            # output = process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
+            # cv2.imshow('YOLO V8', output)
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
                 break
@@ -223,9 +209,3 @@ if __name__ == "__main__":
         # clip2 = VideoFileClip(file)
         # challenge_clip = clip2.fl_image(lambda x: process_image(x, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
         # challenge_clip.write_videofile(output, audio=False)
-
-
-        # bbox [1056  389 1279  527]
-# box [800 360 959 519]
-# bbox [1056  389 1279  527]
-# bboxes [array([800, 360, 959, 496], dtype=int64), array([1056,  389, 1279,  523], dtype=int64)]
