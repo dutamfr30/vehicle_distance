@@ -59,6 +59,8 @@ class Car:
     def calculate_position(self, bbox):
         if (self.has_position):
             pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
+            print('pos', pos)
+            print('transform_matrix', self.transform_matrix)
             dst = cv2.perspectiveTransform(pos, self.transform_matrix).reshape(-1, 1)
             return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter)
         else:
@@ -130,8 +132,11 @@ class CarDetector:
     # cv2.namedWindow('YOLO V8')
     # cv2.setMouseCallback('YOLO V8', POINTS)
 
-    def detect(self, img):
-        car_windows = []
+    def detect(self, img, reset=False):
+        # car_windows = []
+        if reset:
+            self.cars = []
+            self.first = True
         frame = cv2.undistort(img, self.cam_matrix, self.dist_coeffs)
         results = model.predict(frame, classes=classes, conf=conf)  
         bboxes = [] 
@@ -150,14 +155,14 @@ class CarDetector:
 
         print('bboxes', bboxes)
         # frame = annotator.result()
-        cv2.imshow('YOLO V8', frame)
+        # cv2.imshow('YOLO V8', frame)
 
         for car in self.cars:
             car.update_car(bboxes)
 
         for bbox in bboxes:
-            self.cars.append(Car(bbox, self.warped_size, self.pixel_per_meter, self.transform_matrix))
-
+            self.cars.append(Car(bbox, self.first, self.warped_size, self.transform_matrix, self.pixel_per_meter))
+            
         tmp_cars = []
         for car in self.cars:
             if car.found:
@@ -196,7 +201,7 @@ if __name__ == "__main__":
 
     def process_image(img, car_detector, lane_finder, cam_matrix, dist_coeffs, transform_matrix, pixel_per_meter, reset=False):
         img = cv2.undistort(img, cam_matrix, dist_coeffs)
-        car_detector.detect(img)
+        car_detector.detect(img, reset=reset)
         lane_finder.find_lane(img, distorted=False, reset=reset)
         return lane_finder.draw_lane_weighted(car_detector.draw(img))
 
@@ -207,25 +212,19 @@ if __name__ == "__main__":
                          pixel_per_meter=pixels_per_meter, cam_matrix=cam_matrix, 
                          dist_coeffs=dist_coeffs)
         video_capture = cv2.VideoCapture(file)
-        while True:
-            ret, image = video_capture.read()
-            if not ret:
-                break
-            # process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-            output = process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-            cv2.imshow('YOLO V8', process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
-            key = cv2.waitKey(1)
-            if key & 0xFF == ord('q'):
-                break
-        video_capture.release()
-        cv2.destroyAllWindows()
-        # output = os.path.join(output_path, "detect_cars_"+file)
-        # clip2 = VideoFileClip(file)
-        # challenge_clip = clip2.fl_image(lambda x: process_image(x, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
-        # challenge_clip.write_videofile(output, audio=False)
-
-
-        # bbox [1056  389 1279  527]
-# box [800 360 959 519]
-# bbox [1056  389 1279  527]
-# bboxes [array([800, 360, 959, 496], dtype=int64), array([1056,  389, 1279,  523], dtype=int64)]
+        # while True:
+        #     ret, image = video_capture.read()
+        #     if not ret:
+        #         break
+        #     # process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
+        #     output = process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
+        #     cv2.imshow('YOLO V8', process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
+        #     key = cv2.waitKey(1)
+        #     if key & 0xFF == ord('q'):
+        #         break
+        # video_capture.release()
+        # cv2.destroyAllWindows()
+        output = os.path.join(output_path, "detect_cars_1"+file)
+        clip2 = VideoFileClip(file)
+        challenge_clip = clip2.fl_image(lambda x: process_image(x, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
+        challenge_clip.write_videofile(output, audio=False)

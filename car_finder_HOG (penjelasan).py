@@ -63,6 +63,8 @@ class Car:
     def calculate_position(self, bbox):
         if (self.has_position):
             pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
+            print('pos', pos)
+            print('transform', self.trasform_matrix)
             dst = cv.perspectiveTransform(pos, self.trasform_matrix).reshape(-1, 1)
             return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter)
         else:
@@ -330,7 +332,7 @@ if __name__ == '__main__':
     def process_image(img, car_finder, lane_finder, cam_matrix, dist_coeffs, reset=False):
         img = cv.undistort(img, cam_matrix, dist_coeffs)
         car_finder.find_cars(img, reset=reset)
-        lane_finder.find_lane(img, distorted=False, reset = reset)
+        lane_finder.find_lane(img, distorted=False, reset=reset)
         return lane_finder.draw_lane_weighted(car_finder.draw_cars(img))
     
     lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,

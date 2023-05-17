@@ -59,7 +59,7 @@ print("Camera Calibrated: ", ret)
 print("\nCamera Matrix:\n", mtx)
 print("\nDistortion Parameters:\n", dist)
 print("\nRotation Vectors:\n", rvecs)
-print("\nTranslatin Vectors:\n", tvecs)
+print("\nTranslation Vectors:\n", tvecs)
 
 # Transformation the matrix distortion coefficients to writeable lists
 data = {'camera_matrix': np.asarray(mtx).tolist(), 'dist_coeffs': np.asarray(dist).tolist()}
