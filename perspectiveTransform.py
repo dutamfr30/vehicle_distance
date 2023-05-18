@@ -18,7 +18,9 @@ with open(settings.CALIBRATION_FILE_NAME, 'rb') as f:
     cam_matrix = calib_data["cam_matrix"]
     dist_coeffs = calib_data["dist_coeffs"]
 
+# membuat matriks 2x2 dan diinisiasi dengan nilai nol 
 Lhs = np.zeros((2,2), dtype=np.float32)
+# membuat matriks 2x2 dan diinisiasi dengan nilai nol
 Rhs = np.zeros((2,1), dtype=np.float32)
 
 for img_path in straight_images:
