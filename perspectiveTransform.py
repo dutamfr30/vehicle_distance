@@ -28,7 +28,7 @@ for img_path in straight_images:
     img = cv.undistort(img, cam_matrix, dist_coeffs)
     img_hls = cv.cvtColor(img, cv.COLOR_RGB2HLS) # mengubah warna RGB ke HLS (Hue, Lightness, Saturation)
     edges = cv.Canny(img_hls[:, :, 1], 200, 100) # deteksi tepi algoritma canny pada saluran lightness dengan parameter batas atas dan bawah 200 dan 100
-    lines = cv.HoughLinesP(edges*roi, 0.5, np.pi/180, 20, None, 180, 120) # transformasi hough untuk mendeteksi garis lurus pada gambar
+    lines = cv.HoughLinesP(edges*roi, 0.5, np.pi/180, 20, None, 180, 120) # transformasi hough untuk mendeteksi garis lurus pada gambar, dan dikembalikan daftar garis dalam bentuk array
     # melakukan iterasi pada setiap line yang terdeteksi
     for line in lines:
         for x1, y1, x2, y2 in line:
@@ -46,7 +46,7 @@ print("vp", vanishing_point[0])
 print("vp(x, y)", vanishing_point)
 
 top = vanishing_point[1] + 60 
-bottom = settings.ORIGINAL_SIZE[1]-35 # menghitung titik bawah dan atas dari gambar yang akan dibuat transformasi perspektif
+bottom = np.array([settings.ORIGINAL_SIZE[1]-35], dtype=np.float32) # menghitung titik bawah dan atas dari gambar yang akan dibuat transformasi perspektif
 width = 530 # lebar gambar yang akan digunakan untuk transformasi perspektif
 # menghitung titik pada garis yang memiliki koordinat y tertentu
 def on_line(p1, p2, ycoord): 
@@ -77,7 +77,7 @@ cv.polylines(img, [src_points.astype(np.int32)], True, (0, 0, 255), thickness=5)
 
 # Find the projection matrix
 M = cv.getPerspectiveTransform(src_points, dst_points) # menghitung matriks transformasi perspektif
-min_wid = 1000 # lebar minimum dalam piksel
+min_wid = 1000 # lebar minimum dalam piksel 
 
 for img_path in straight_images:
     img = pimg.imread(img_path)

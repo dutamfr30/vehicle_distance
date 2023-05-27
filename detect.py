@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 
 from moviepy.editor import VideoFileClip
-from settings import CALIBRATION_FILE_NAME, PERSPECTIVE_FILE_NAME, ORIGINAL_SIZE, UNWARPED_SIZE
+from settings import CALIBRATION_FILE_NAME_WEBCAM, PERSPECTIVE_FILE_NAME, ORIGINAL_SIZE, UNWARPED_SIZE
 from lane_finder import Lane_Finder
 
 
@@ -103,6 +103,7 @@ class Car:
         if self.display:
             window = self.filtered_bbox.output().astype(np.uint32)
             cv2.rectangle(img, (window[0], window[1]), (window[2], window[3]), color, thickness)
+            print('window', window)
             if self.has_position:
                 cv2.putText(img, "RPos : {:6.2f}m".format(self.position.output()[0]), (int(window[0]), int(window[1]-5)),
                            cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=3, color=(255, 255, 255))    
@@ -146,7 +147,7 @@ class CarDetector:
             for box in boxes:
                 b = box.xyxy[0]
                 # c = box.cls
-                bbox = np.array([np.int(b[0]), np.int(b[1]), np.int(b[2]), np.int(b[3])], dtype=np.int64)
+                bbox = np.array([(b[0]), (b[1]), (b[2]), (b[3])], dtype=np.int64)
                 # annotator.box_label(b, model.names[int(c)], color=(0, 255, 0), txt_color=(255, 9, 9))
                 print('b', b)
                 # print('c', c)
@@ -183,11 +184,12 @@ if __name__ == "__main__":
     conf = 0.50
     classes = 2,3,5,7
     
-    cam = cv2.VideoCapture('challenge_video.mp4')
-    video_files = ['challenge_video.mp4']
+    cam = cv2.VideoCapture(1)
+    # cam = cv2.resize(cam, (ORIGINAL_SIZE[0], ORIGINAL_SIZE[1]))
+    video_files = ['test_webcam3.mp4']
     output_path = 'output_videos'
     
-    with open(CALIBRATION_FILE_NAME, 'rb') as f:
+    with open(CALIBRATION_FILE_NAME_WEBCAM, 'rb') as f:
         calib_data = pickle.load(f)
         cam_matrix = calib_data["cam_matrix"]
         dist_coeffs = calib_data["dist_coeffs"]
@@ -199,11 +201,12 @@ if __name__ == "__main__":
         pixels_per_meter = perspective_data["pixels_per_meter"]
         orig_points = perspective_data["orig_points"]
 
-    def process_image(img, car_detector, lane_finder, cam_matrix, dist_coeffs, transform_matrix, pixel_per_meter, reset=False):
+    def process_image(img, car_detector, cam_matrix, dist_coeffs, transform_matrix, pixel_per_meter, reset=False):
         img = cv2.undistort(img, cam_matrix, dist_coeffs)
         car_detector.detect(img, reset=reset)
-        lane_finder.find_lane(img, distorted=False, reset=reset)
-        return lane_finder.draw_lane_weighted(car_detector.draw(img))
+        # lane_finder.find_lane(img, distorted=False, reset=reset)
+        # return lane_finder.draw_lane_weighted(car_detector.draw(img))
+        return car_detector.draw(img)
 
     for file in video_files:
         lf = Lane_Finder(img_size=ORIGINAL_SIZE, warped_size=UNWARPED_SIZE, cam_matrix=cam_matrix, dist_coeffs=dist_coeffs, 
@@ -212,19 +215,20 @@ if __name__ == "__main__":
                          pixel_per_meter=pixels_per_meter, cam_matrix=cam_matrix, 
                          dist_coeffs=dist_coeffs)
         video_capture = cv2.VideoCapture(file)
-        # while True:
-        #     ret, image = video_capture.read()
-        #     if not ret:
-        #         break
-        #     # process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-        #     output = process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-        #     cv2.imshow('YOLO V8', process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
-        #     key = cv2.waitKey(1)
-        #     if key & 0xFF == ord('q'):
-        #         break
-        # video_capture.release()
-        # cv2.destroyAllWindows()
-        output = os.path.join(output_path, "detect_cars_1"+file)
-        clip2 = VideoFileClip(file)
-        challenge_clip = clip2.fl_image(lambda x: process_image(x, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
-        challenge_clip.write_videofile(output, audio=False)
+        while True:
+            ret, image = cam.read()
+            image = cv2.resize(image, (ORIGINAL_SIZE[0], ORIGINAL_SIZE[1]))
+            if not ret:
+                break
+            # process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
+            output = process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
+            cv2.imshow('YOLO V8', process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
+            key = cv2.waitKey(1)
+            if key & 0xFF == ord('q'):
+                break
+        video_capture.release()
+        cv2.destroyAllWindows()
+        # output = os.path.join(output_path, "detect_cars_only"+file)
+        # clip2 = VideoFileClip(file)
+        # challenge_clip = clip2.fl_image(lambda x: process_image(x, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
+        # challenge_clip.write_videofile(output, audio=False)

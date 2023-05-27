@@ -12,9 +12,9 @@ allowed_classes = ['car', 'motorcycle', 'bus', 'truck']
 
 
 
-cap = cv2.VideoCapture('cctv.mp4')
+cap = cv2.VideoCapture(1)
 
-with open(settings.CALIBRATION_FILE_NAME, 'rb') as f:
+with open(settings.CALIBRATION_FILE_NAME_WEBCAM, 'rb') as f:
     calib_data = pickle.load(f)
     cam_matrix = calib_data["cam_matrix"]
     dist_coeffs = calib_data["dist_coeffs"]
@@ -30,9 +30,9 @@ cv2.setMouseCallback('frame', POINTS)
 while True:
     ret, frame = cap.read()
     frame = cv2.undistort(frame, cam_matrix, dist_coeffs)
-    frame = cv2.resize(frame, (640, 480))
+    frame = cv2.resize(frame, (1366, 768))
     results = model(frame)
-    # frame = np.squeeze(results.render())
+    frame = np.squeeze(results.render())
     print(results.pandas().xyxy[0])
     for index, row in results.pandas().xyxy[0].iterrows():
         x1 = int(row['xmin'])
@@ -44,7 +44,7 @@ while True:
         bounding_box = cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(frame, b, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
     cv2.imshow('frame', frame)
-    if cv2.waitKey(0) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap.release()

@@ -8,7 +8,7 @@ import settings
 
 n_x = 9
 n_y = 6
-# frameSize = (1440, 1080)
+frameSize = (settings.ORIGINAL_SIZE[0], settings.ORIGINAL_SIZE[1]) 
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -21,17 +21,18 @@ objp[:, :2] = np.mgrid[0:n_x, 0:n_y].T.reshape(-1, 2)
 image_points = [] # 3D point in real world space
 object_points = [] # 2D point in image plane
 
-source_path = "D:\ITK\Tugas Akhir Informatika\vehicle_detection"
+source_path = "D:/TUGAS AKHIR DUTA/vehicle_distance"
 
-images = [f for f in glob.glob(source_path+'/**/*.png')]
+images = [f for f in glob.glob(source_path+'/camera_cal_webcam/*.jpg')]
 
 found = 0
 # loop through provided images
 for image in images :
     # print(image)
     img = cv.imread(image)
+    img = cv.resize(img, frameSize)
     cv.imshow('img', img)
-    cv.waitKey(500)
+    cv.waitKey(1)
     print(image)
     img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
    
@@ -67,14 +68,14 @@ print(mtx)
 print(dist)
 
 # save data with yaml
-with open("calibration_matrix.yaml", "w") as f:
+with open("webcam_calibration_matrix.yaml", "w") as f:
     yaml.dump(data, f)
 
 # pickle the data and save it to a file to used in perspective transform
 calib_data = {'cam_matrix': mtx, 
               'dist_coeffs': dist,
               'img_size': img_size}
-with open(settings.CALIBRATION_FILE_NAME, "wb") as f:
+with open(settings.CALIBRATION_FILE_NAME_WEBCAM, "wb") as f:
     pickle.dump(calib_data, f)
 
 # Undistortion
@@ -87,14 +88,14 @@ for image in images:
     # Undistort
     dst = cv.undistort(img, mtx, dist, None, newCameraMatrix)
     cv.imshow('undistort', dst)
-    cv.waitKey(500)
+    cv.waitKey(1)
 
     # Crop the image
     x, y, w, h = roi
     dst = dst[y:y+h, x:x+w]
     # cv.imwrite('CalResult1.png', dst)
     cv.imshow('undistort2', dst)
-    cv.waitKey(0)
+    cv.waitKey(1)
 
 cv.destroyAllWindows()
 
@@ -116,3 +117,17 @@ cv.destroyAllWindows()
 
 # print("\ntotal error: {}".format(mean_error/len(object_points)))
 # print("\n\n\n")
+
+# [[1.05410380e+03 0.00000000e+00 7.15218900e+02]
+#  [0.00000000e+00 1.40857644e+03 5.52757505e+02]
+#  [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
+# [[-3.83539547e-01  9.40152828e-02  2.03238857e-04 -6.14793914e-04
+#    2.97137693e-03]]
+
+
+
+# [[1.40424392e+03 0.00000000e+00 9.52225559e+02]
+#  [0.00000000e+00 1.40699390e+03 5.52804431e+02]
+#  [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
+# [[-3.83384815e-01  9.67820418e-02  9.38332445e-05 -5.57076132e-04
+#   -1.35046384e-03]]
