@@ -4,7 +4,7 @@ import settings
 import numpy as np
 import cv2 as cv
 import pickle
-# import yaml
+import yaml
 
 # image used to find the fanishing point 
 straight_images = ["test_images/straight_lines1.jpg", "test_images/straight_lines2.jpg"]
@@ -114,12 +114,12 @@ plt.show
 
 
 
-# perspective_data = {'perspective_transform': M,
-#                     'pixels_per_meter': (pixel_per_meter_x, pixel_per_meter_y),
-#                     'orig_points': src_points}
+perspective_data = {'perspective_transform': M,
+                    'pixels_per_meter': (pixel_per_meter_x, pixel_per_meter_y),
+                    'orig_points': src_points}
 
 # with open(settings.PERSPECTIVE_FILE_NAME, 'wb') as f:
 #     pickle.dump(perspective_data, f)
 
-# with open("perspective_transform.yaml", 'w') as f:
-#     yaml.dump(perspective_data, f)
+with open("perspective_transform.yaml", 'w') as f:
+    yaml.dump(perspective_data, f)

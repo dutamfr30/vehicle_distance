@@ -8,11 +8,11 @@ import pickle
 
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 class_names = model.module.names if hasattr(model, 'module') else model.names
-allowed_classes = ['car', 'motorcycle', 'bus', 'truck']
 
 
 
-cap = cv2.VideoCapture(1)
+
+cap = cv2.VideoCapture('test_webcam3.mp4')
 
 with open(settings.CALIBRATION_FILE_NAME_WEBCAM, 'rb') as f:
     calib_data = pickle.load(f)

@@ -21,7 +21,7 @@ objp[:, :2] = np.mgrid[0:n_x, 0:n_y].T.reshape(-1, 2)
 image_points = [] # 3D point in real world space
 object_points = [] # 2D point in image plane
 
-source_path = "D:/TUGAS AKHIR DUTA/vehicle_distance"
+source_path = "D:/ITK/Tugas Akhir Informatika/vehicle_distance"
 
 images = [f for f in glob.glob(source_path+'/camera_cal_webcam/*.jpg')]
 
