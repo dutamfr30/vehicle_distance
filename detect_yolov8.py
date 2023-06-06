@@ -219,9 +219,9 @@ class CarDetector:
                 # c = box.cls
                 bbox = np.array([(b[0]), (b[1]), (b[2]), (b[3])], dtype=np.int64)
                 # annotator.box_label(b, model.names[int(c)], color=(0, 255, 0), txt_color=(255, 9, 9))
-                # print('b', b)
+                print('b', b)
                 # print('c', c)
-                # print('bbox', bbox)
+                print('bbox', bbox)
                 bboxes.append(bbox)
 
         # print('bboxes', bboxes)
@@ -255,9 +255,9 @@ if __name__ == "__main__":
     classes = 2,3,5,7
     
     cam = cv2.VideoCapture(0)
-    video_files = ['test_webcam2.mp4']
+    video_files = ['test_webcam3.mp4']
     output_path = 'output_videos'
-    output_file = 'test_webcam2.mp4'                                                                                
+                                                                                    
     with open(CALIBRATION_FILE_NAME_WEBCAM, 'rb') as f:
         calib_data = pickle.load(f)
         cam_matrix = calib_data["cam_matrix"]
