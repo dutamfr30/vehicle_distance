@@ -206,42 +206,22 @@ class CarDetector:
         self.dist_coeffs = dist_coeffs
         self.cars = []
         self.first = True
-        
-
-    # def POINTS(event, x,y,flags,param):
-    #     if event == cv2.EVENT_MOUSEMOVE :
-    #         colorsBRG = [x, y]
-    #         print(colorsBRG)
-
-    # cv2.namedWindow('YOLO V8')
-    # cv2.setMouseCallback('YOLO V8', POINTS)
 
     def detect(self, img, reset=False):
         if reset:
             self.cars = []
             self.first = True
         frame = cv2.undistort(img, self.cam_matrix, self.dist_coeffs)
-        # results = model(frame) 
         results = model(frame)
         frame = np.squeeze(results.render())
-        # print(results.pandas().xyxy[0])
         bboxes = [] 
         for index, row in results.pandas().xyxy[0].iterrows():
             x1 = int(row['xmin'])
             y1 = int(row['ymin'])
             x2 = int(row['xmax'])
             y2 = int(row['ymax'])
-            # b = str(row['name'])
-            # print('x1', x1)
-            # print('x1', x1)
-            # print('x1', x1)
-            # print('x1', y2)
             bbox = np.array([(x1), (y1), (x2), (y2)], dtype=np.int64)
             bboxes.append(bbox)
-
-        # print('bboxes', bboxes)
-        # frame = annotator.result()
-        # cv2.imshow('YOLO V8', frame)
 
         for car in self.cars:
             car.update_car(bboxes)
@@ -305,12 +285,9 @@ if __name__ == "__main__":
             if not ret:
                 break
             # process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-            
             output = process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
             cv2.putText(image, "FPS: {:.2f}".format(1.0 / (time.time() - start_time)), (580, 40), cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=3, color=(255, 255, 255))
             cv2.putText(image, "FPS: {:.2f}".format(1.0 / (time.time() - start_time)), (580, 40), cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=2, color=(0, 0, 0))
-            # print("FPS: ", 1.0 / (time.time() - start_time)) # FPS = 1 / time to process loop
-            # print('jarak', cd.cars[0].distance)
             cv2.imshow('YOLO V5', process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
@@ -321,23 +298,3 @@ if __name__ == "__main__":
         # clip2 = VideoFileClip(file)
         # challenge_clip = clip2.fl_image(lambda x: process_image(x, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
         # challenge_clip.write_videofile(output, audio=True)
-
-    # lf = Lane_Finder(img_size=ORIGINAL_SIZE, warped_size=UNWARPED_SIZE, cam_matrix=cam_matrix, dist_coeffs=dist_coeffs, 
-    #                  transform_matrix=perspective_transform, pixels_per_meter=pixels_per_meter, warning_icon='warning.png')
-    # cd = CarDetector(warped_size=UNWARPED_SIZE, transform_matrix=perspective_transform, 
-    #                  pixel_per_meter=pixels_per_meter, cam_matrix=cam_matrix, 
-    #                  dist_coeffs=dist_coeffs)
-    
-    # while True:
-    #     ret, image = cam.read()
-    #     image = cv2.resize(image, (ORIGINAL_SIZE[0], ORIGINAL_SIZE[1]))
-    #     if not ret:
-    #         break
-    #     # process_image(image, cd, lf, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-    #     output = process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter)
-    #     cv2.imshow('YOLO V8', process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
-    #     key = cv2.waitKey(1)
-    #     if key & 0xFF == ord('q'):
-    #         break
-    # # video_capture.release()
-    # cv2.destroyAllWindows()

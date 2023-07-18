@@ -28,7 +28,6 @@ images = [f for f in glob.glob(source_path+'/camera_cal_webcam/*.jpg')]
 found = 0
 # loop through provided images
 for image in images :
-    # print(image)
     img = cv.imread(image)
     img = cv.resize(img, frameSize)
     cv.imshow('img', img)
@@ -119,16 +118,3 @@ cv.destroyAllWindows()
 # print("\ntotal error: {}".format(mean_error/len(object_points)))
 # print("\n\n\n")
 
-# [[1.05410380e+03 0.00000000e+00 7.15218900e+02]
-#  [0.00000000e+00 1.40857644e+03 5.52757505e+02]
-#  [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
-# [[-3.83539547e-01  9.40152828e-02  2.03238857e-04 -6.14793914e-04
-#    2.97137693e-03]]
-
-
-
-# [[1.40424392e+03 0.00000000e+00 9.52225559e+02]
-#  [0.00000000e+00 1.40699390e+03 5.52804431e+02]
-#  [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
-# [[-3.83384815e-01  9.67820418e-02  9.38332445e-05 -5.57076132e-04
-#   -1.35046384e-03]]

@@ -1,14 +1,13 @@
 import multiprocessing
 import os
 from ultralytics import YOLO
-from ultralytics.yolo.utils.plotting import Annotator
 import cv2
 import time
 import numpy as np 
 import pickle
 import pygame
 
-from moviepy.editor import VideoFileClip, AudioFileClip, concatenate_audioclips
+from moviepy.editor import VideoFileClip
 from settings import CALIBRATION_FILE_NAME_WEBCAM, PERSPECTIVE_FILE_NAME, ORIGINAL_SIZE, UNWARPED_SIZE
 # from lane_finder import Lane_Finder
 
@@ -63,6 +62,7 @@ class Car:
 
     def calculate_position(self, bbox):
         if (self.has_position):
+            # Menggunakan BEV
             pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
             dst = cv2.perspectiveTransform(pos, self.transform_matrix).reshape(-1, 1)
             centroid_x = np.array(dst[0])
@@ -70,30 +70,12 @@ class Car:
             euclidean_distance = np.sqrt((centroid_x - self.warped_size[0]/2)**2 + (centroid_y - self.warped_size[1])**2)
             return np.array([euclidean_distance/self.pixel_per_meter[1]])
             
-            # Menggunakan BEV
-            # pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
-            # dst = cv2.perspectiveTransform(pos, self.transform_matrix).reshape(-1, 1)
-            # print('pos', pos)
-            # print('dst', dst)
-            # position = np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter[1])
-            # print('position', position)
-            # return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter[1])
-            
             # Tanpa Menggunakan BEV
             # pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(-1, 1)
             # print('pos', pos)
             # position = np.array((ORIGINAL_SIZE[1]-pos[1])/self.pixel_per_meter[1])
             # print('position', position)
-            # return position 
-        
-            # Tanpa Menggunakan BEV (ECULIDEAN DISTANCE)
-            # pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(-1, 1)
-            # print('pos', pos)
-            # centroid_x = np.array(pos[0])
-            # centroid_y = np.array(pos[1])
-            # euclidean_distance = np.sqrt((centroid_x - ORIGINAL_SIZE[0]/2)**2 + (centroid_y - ORIGINAL_SIZE[1])**2)
-            # return np.array([euclidean_distance/self.pixel_per_meter[1]])
-            
+            # return position   
         else:
             return np.array([0])
 
@@ -114,21 +96,21 @@ class Car:
             self.found = False
 
     def update_car(self, bboxes):
-        current_window = self.filtered_bbox.output() # membaca bounding box terfilter
-        intersection = np.zeros(4, dtype=np.float32) # membuat array kosong 4 dimensi dengan tipe data float32
+        current_window = self.filtered_bbox.output()
+        intersection = np.zeros(4, dtype=np.float32)
         for idx, bbox in enumerate(bboxes):
-            intersection[0:2] = np.maximum(current_window[0:2], bbox[0:2]) # memperbarui nilai koordinat sudut kiri atas pada intersection dengan memilih nilai maksimum antara nilai koordinat sudut kiri atas pada current_window dan bbox
-            intersection[2:4] = np.minimum(current_window[2:4], bbox[2:4]) # memperbarui nilai koordinat sudut kanan bawah pada intersection dengan memilih nilai minimum antara nilai koordinat sudut kanan bawah pada current_window dan bbox
+            intersection[0:2] = np.maximum(current_window[0:2], bbox[0:2])
+            intersection[2:4] = np.minimum(current_window[2:4], bbox[2:4])
             if (area(bbox) > 0) and area(current_window) and ((area(intersection)/area(current_window) > 0.8) or (area(intersection)/area(bbox) > 0.8)):
-                self.one_found() # metode untuk menandakan bahwa kendaraan ditemukan
-                self.filtered_bbox.new_point(bbox) # memperbarui nilai bounding box terfilter
-                self.position.new_point(self.calculate_position(bbox)) # memperbarui nilai posisi kendaraan
-                bboxes.pop(idx) # menghapus kotak pembatas yang diproses dari bboxes menggunakan indeks idx
+                self.one_found()
+                self.filtered_bbox.new_point(bbox)
+                self.position.new_point(self.calculate_position(bbox))
+                bboxes.pop(idx)
                 return
             
-        self.one_lost() # metode untuk menandakan bahwa kendaraan hilang
-        self.filtered_bbox.skip_one() # memperbarui nilai bounding box terfilter
-        self.position.skip_one() # memperbarui nilai posisi kendaraan
+        self.one_lost()
+        self.filtered_bbox.skip_one()
+        self.position.skip_one()
 
     
     def check_distance(self, distance):
@@ -136,17 +118,14 @@ class Car:
             self.warning_counter += 1
             if self.warning_counter > 0:
                 self.start_warning_sound('Hati hati.mp3')
-            # self.vehicle_info.append(('Kendaraan {}'. format(len(self.vehicle_info)+1), distance))
         elif distance < 10 and distance >= 5:
             self.warning_counter += 1
             if self.warning_counter > 0:
                 self.start_warning_sound('Kurangi kecepatan.mp3')
-            # self.vehicle_info.append(('Kendaraan {}'. format(len(self.vehicle_info)+1), distance))
         elif distance < 5:
             self.warning_counter += 1
             if self.warning_counter > 0:
                 self.start_warning_sound('Terlalu Dekat.mp3')
-            # self.vehicle_info.append(('Kendaraan {}'. format(len(self.vehicle_info)+1), distance))
         else:
             self.warning_counter = 0
             self.stop_warning_sound()
@@ -186,11 +165,6 @@ class Car:
                 cv2.putText(img, "Jarak : {:6.2f}m".format(self.position.output()[0]), (int(window[0]), int(window[1]-5)),
                            cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=2, color=(0, 0, 0))
                 print('position output', self.position.output()[0])
-                # for i, (vehicle, distance) in enumerate(self.vehicle_info):
-                #     cv2.putText(img, "Kendaraan {}: {:6.2f}m".format(i+1, distance), (10, 30+i*20),
-                #         cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=3, color=(255, 255, 255))    
-                #     cv2.putText(img, "Kendaraan {}: {:6.2f}m".format(i+1, distance), (10, 30+i*20),
-                #         cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=2, color=(0, 0, 0))
                 distance = self.position.output()[0]
                 self.check_distance(distance)   
                 if self.position.output()[0] < 15 and self.position.output()[0] >= 10:
@@ -213,10 +187,6 @@ class Car:
                         cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=3, color=(255, 255, 255))
                     cv2.putText(img, "JARAK AMAN", (int(window[0]), int(window[3]+20)),
                             cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=2, color=(0, 255, 0))
-                # cv2.putText(img, "RVel: {:6.2f}km/h".format(self.position.speed()[0]*self.fps*3.6), (int(window[0]), int(window[3]+20)),
-                #            cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=3, color=(255, 255, 255))    
-                # cv2.putText(img, "RVel: {:6.2f}km/h".format(self.position.speed()[0]*self.fps*3.6), (int(window[0]), int(window[3]+20)),
-                #            cv2.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=2, color=(0, 0, 0))   
 
 
 
@@ -229,15 +199,6 @@ class CarDetector:
         self.dist_coeffs = dist_coeffs
         self.cars = []
         self.first = True
-        
-
-    # def POINTS(event, x,y,flags,param):
-    #     if event == cv2.EVENT_MOUSEMOVE :
-    #         colorsBRG = [x, y]
-    #         print(colorsBRG)
-
-    # cv2.namedWindow('YOLO V8')
-    # cv2.setMouseCallback('YOLO V8', POINTS)
 
     def detect(self, img, reset=False):
         if reset:
@@ -247,20 +208,11 @@ class CarDetector:
         results = model.predict(frame, classes=classes, conf=conf)  
         bboxes = [] 
         for r in results:
-            # annotator = Annotator(frame)
             boxes = r.boxes
             for box in boxes:
                 b = box.xyxy[0]
-                # c = box.cls
                 bbox = np.array([(b[0]), (b[1]), (b[2]), (b[3])], dtype=np.int64)
-                # annotator.box_label(b, model.names[int(c)], color=(0, 255, 0), txt_color=(255, 9, 9))
-                # print('b', b)
-                # print('c', c)
-                # print('bbox', bbox)
                 bboxes.append(bbox)
-
-        # print('bboxes', bboxes)
-        # frame = annotator.result()
 
         for car in self.cars:
             car.update_car(bboxes)
@@ -306,7 +258,6 @@ if __name__ == "__main__":
 
     def process_image(img, car_detector, cam_matrix, dist_coeffs, transform_matrix, pixel_per_meter, reset=False):
         img = cv2.undistort(img, cam_matrix, dist_coeffs)
-        # img = cv2.resize(img, (ORIGINAL_SIZE[0], ORIGINAL_SIZE[1]))
         car_detector.detect(img, reset=reset)
         # lane_finder.find_lane(img, distorted=False, reset=reset)
         # return lane_finder.draw_lane_weighted(car_detector.draw(img))
@@ -332,21 +283,11 @@ if __name__ == "__main__":
             cv2.imshow('YOLO V8', process_image(image, cd, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter))
             # bev_image = cv2.warpPerspective(image, perspective_transform, UNWARPED_SIZE)
             # cv2.imshow('BEV', bev_image)
-            # cv2.imshow('Output', output)
             key = cv2.waitKey(1)
             if key & 0xFF == ord('q'):
                 break
         video_capture.release()
         cv2.destroyAllWindows()
-
-        # audio_files = ['sound_test1.wav', 'sound_test2.wav', 'sound_test3.wav']
-        # audio_clips = []
-        # for audio_file in audio_files:
-        #     audio_clip = AudioFileClip(audio_file)
-        #     audio_clips.append(audio_clip)
-        # concatenated_audio = concatenate_audioclips(audio_clips)
-        # audio = clip2.audio.set_audio_concatenated(concatenated_audio)
-        # # challenge_clip = challenge_clip.set_audio(audio)
 
         # output = os.path.join(output_path, "detect_cars_only"+file)
         # clip2 = VideoFileClip(file)
