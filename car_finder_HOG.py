@@ -1,6 +1,7 @@
 import math 
 import os 
 import pickle
+import time
 import cv2 as cv
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -62,7 +63,7 @@ class Car:
         if (self.has_position):
             pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
             dst = cv.perspectiveTransform(pos, self.trasform_matrix).reshape(-1, 1)
-            return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter)
+            return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter[1])
         else:
             return np.array([0])
         
@@ -304,38 +305,60 @@ if __name__ == '__main__':
     pixels_per_meter = perspective_data["pixels_per_meter"]
     orig_points = perspective_data["orig_points"]
 
-    video_files = ['test_video.mp4', 'project_video.mp4']
+    video_files = ['test_webcam2(compress).mp4']
     output_path = "output_videos"
 
-    def process_image(img, car_finder, lane_finder, cam_matrix, dist_coeffs, reset=False):
+    def process_image(img, car_finder, cam_matrix, dist_coeffs, reset=False):
         img = cv.undistort(img, cam_matrix, dist_coeffs)
         car_finder.find_cars(img, reset=reset)
-        lane_finder.find_lane(img, distorted=False, reset = reset)
-        return lane_finder.draw_lane_weighted(car_finder.draw_cars(img))
+        # lane_finder.find_lane(img, distorted=False, reset = reset)
+        # return lane_finder.draw_lane_weighted(car_finder.draw_cars(img))
+        return car_finder.draw_cars(img)
+
+    # lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,
+    #                 perspective_transform, pixels_per_meter, "warning.png")
     
-    lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,
-                    perspective_transform, pixels_per_meter, "warning.png")
-    
-    cf = CarFinder(64, hist_bins=128, small_size=20, orientations=12, pix_per_cell=8, cell_per_block=1,
-                   classifier=cls, scaler=scaler, window_sizes=window_size, window_rois=window_roi, transform_matrix=perspective_transform, warped_size=UNWARPED_SIZE,
-                   pixel_per_meter=pixels_per_meter)
+    # cf = CarFinder(64, hist_bins=128, small_size=20, orientations=12, pix_per_cell=8, cell_per_block=1,
+    #                classifier=cls, scaler=scaler, window_sizes=window_size, window_rois=window_roi, transform_matrix=perspective_transform, warped_size=UNWARPED_SIZE,
+    #                pixel_per_meter=pixels_per_meter)
      
-    for img_path in os.listdir(test_images_dir):
-        if "jpg" in img_path:
-            img = mpimg.imread(os.path.join(test_images_dir, img_path))
-            res_img = process_image(img, cf, lf, cam_matrix, dist_coeffs, True)
-            plt.imshow(res_img)
-            plt.show()
-            mpimg.imsave(os.path.join(output_images_dir, img_path), res_img)
+    # for img_path in os.listdir(test_images_dir):
+    #     if "jpg" in img_path:
+    #         img = mpimg.imread(os.path.join(test_images_dir, img_path))
+    #         res_img = process_image(img, cf, lf, cam_matrix, dist_coeffs, True)
+    #         plt.imshow(res_img)
+    #         plt.show()
+    #         mpimg.imsave(os.path.join(output_images_dir, img_path), res_img)
 
     for file in video_files:
-        lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,
-                         perspective_transform, pixels_per_meter, "warning.png")
+        # lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,
+        #                  perspective_transform, pixels_per_meter, "warning.png")
         cf = CarFinder(64, hist_bins=128, small_size=20, orientations=12, pix_per_cell=8, cell_per_block=1,
                        classifier=cls, scaler=scaler, window_sizes=window_size, window_rois=window_roi,
                        transform_matrix=perspective_transform, warped_size=UNWARPED_SIZE,
                        pixel_per_meter=pixels_per_meter)
-        output = os.path.join(output_path, "cars_"+file)
-        clip2 = VideoFileClip(file)
-        challenge_clip = clip2.fl_image(lambda x: process_image(x, cf, lf, cam_matrix, dist_coeffs))
-        challenge_clip.write_videofile(output, audio=False)
+        video_capture = cv.VideoCapture(file)   
+        while True:
+            start_time = time.time() # start time of the loop
+            ret, image = video_capture.read()
+            image = cv.resize(image, (ORIGINAL_SIZE[0], ORIGINAL_SIZE[1]))
+            if not ret:
+                break            
+            output = process_image(image, cf, cam_matrix, dist_coeffs)
+            cv.putText(image, "FPS: {:.2f}".format(1.0 / (time.time() - start_time)), (580, 40), cv.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=3, color=(255, 255, 255))
+            cv.putText(image, "FPS: {:.2f}".format(1.0 / (time.time() - start_time)), (580, 40), cv.FONT_HERSHEY_PLAIN, fontScale=1.25, thickness=2, color=(0, 0, 0))
+            print("FPS: ", 1.0 / (time.time() - start_time)) # FPS = 1 / time to process loop
+            cv.imshow('HOG', process_image(image, cf, cam_matrix, dist_coeffs))
+            # bev_image = cv.warpPerspective(image, perspective_transform, UNWARPED_SIZE)
+            # cv.imshow('BEV', bev_image)
+            # cv.imshow('Output', output)
+            key = cv.waitKey(1)
+            if key & 0xFF == ord('q'):
+                break
+        video_capture.release()
+        cv.destroyAllWindows()
+        
+        # output = os.path.join(output_path, "cars_"+file)
+        # clip2 = VideoFileClip(file)
+        # challenge_clip = clip2.fl_image(lambda x: process_image(x, cf, lf, cam_matrix, dist_coeffs))
+        # challenge_clip.write_videofile(output, audio=False)

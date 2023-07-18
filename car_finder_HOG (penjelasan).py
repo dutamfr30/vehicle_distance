@@ -63,6 +63,8 @@ class Car:
     def calculate_position(self, bbox):
         if (self.has_position):
             pos = np.array((bbox[0]/2+bbox[2]/2, bbox[3])).reshape(1, 1, -1)
+            print('pos', pos)
+            print('transform', self.trasform_matrix)
             dst = cv.perspectiveTransform(pos, self.trasform_matrix).reshape(-1, 1)
             return np.array((self.warped_size[1]-dst[1])/self.pixel_per_meter)
         else:
@@ -256,6 +258,9 @@ class CarFinder:
             nonzeroy = np.array(points[0])
             nonzerox = np.array(points[1])
             bbox = np.array((np.min(nonzerox), np.min(nonzeroy), np.max(nonzerox), np.max(nonzeroy)))
+            print('nonzerox', nonzerox)
+            print('nonzeroy', nonzeroy)
+            print('bbox', bbox)
             car_img = img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
             he = bbox[3]-bbox[1]
             medi = np.median(car_img[-he//8:-1], axis=[0,1])
@@ -267,6 +272,8 @@ class CarFinder:
                     eee -= 1
                 bbox[3] = bbox[1] + eee
             bboxes.append(bbox)
+
+        print('bboxes', bboxes) 
 
         # memperbarui informasi mobil dengan menggunakan daftar bboxes
         for car in self.cars:
@@ -318,13 +325,14 @@ if __name__ == '__main__':
     pixels_per_meter = perspective_data["pixels_per_meter"]
     orig_points = perspective_data["orig_points"]
 
-    video_files = ['test_video.mp4', 'project_video.mp4']
+    # video_files = ['test_video.mp4', 'project_video.mp4']
+    video_files = ['test_video.mp4']
     output_path = "output_videos"
 
     def process_image(img, car_finder, lane_finder, cam_matrix, dist_coeffs, reset=False):
         img = cv.undistort(img, cam_matrix, dist_coeffs)
         car_finder.find_cars(img, reset=reset)
-        lane_finder.find_lane(img, distorted=False, reset = reset)
+        lane_finder.find_lane(img, distorted=False, reset=reset)
         return lane_finder.draw_lane_weighted(car_finder.draw_cars(img))
     
     lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,
@@ -334,13 +342,13 @@ if __name__ == '__main__':
                    classifier=cls, scaler=scaler, window_sizes=window_size, window_rois=window_roi, transform_matrix=perspective_transform, warped_size=UNWARPED_SIZE,
                    pixel_per_meter=pixels_per_meter)
      
-    for img_path in os.listdir(test_images_dir):
-        if "jpg" in img_path:
-            img = mpimg.imread(os.path.join(test_images_dir, img_path))
-            res_img = process_image(img, cf, lf, cam_matrix, dist_coeffs, True)
-            plt.imshow(res_img)
-            plt.show()
-            mpimg.imsave(os.path.join(output_images_dir, img_path), res_img)
+    # for img_path in os.listdir(test_images_dir):
+    #     if "jpg" in img_path:
+    #         img = mpimg.imread(os.path.join(test_images_dir, img_path))
+    #         res_img = process_image(img, cf, lf, cam_matrix, dist_coeffs, True)
+    #         plt.imshow(res_img)
+    #         plt.show()
+    #         mpimg.imsave(os.path.join(output_images_dir, img_path), res_img)
 
     for file in video_files:
         lf = Lane_Finder(ORIGINAL_SIZE, UNWARPED_SIZE, cam_matrix, dist_coeffs,

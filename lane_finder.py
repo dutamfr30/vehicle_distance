@@ -338,11 +338,11 @@ for image_file in os.listdir(input_dir):
 
 
 # video_files = ['harder_challenge_video.mp4', 'challenge_video.mp4', 'project_video.mp4']
-video_files = ['project_video.mp4']
-output_path = "output_videos"
-for file in video_files:
-    lf = Lane_Finder(settings.ORIGINAL_SIZE, settings.UNWARPED_SIZE, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter, 'warning.png')
-    output = os.path.join(output_path, "lane_"+file)
-    clip2 = VideoFileClip(file)
-    challenge_clip = clip2.fl_image(lambda x: lf.process_image(x, reset=False, show_period=20))
-    challenge_clip.write_videofile(output, audio=False)
+# video_files = ['test_video.mp4']
+# output_path = "output_videos"
+# for file in video_files:
+#     lf = Lane_Finder(settings.ORIGINAL_SIZE, settings.UNWARPED_SIZE, cam_matrix, dist_coeffs, perspective_transform, pixels_per_meter, 'warning.png')
+#     output = os.path.join(output_path, "lane_"+file)
+#     clip2 = VideoFileClip(file)
+#     challenge_clip = clip2.fl_image(lambda x: lf.process_image(x, reset=False, show_period=20))
+#     challenge_clip.write_videofile(output, audio=False)
