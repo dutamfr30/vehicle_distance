@@ -239,6 +239,10 @@ class CarDetector:
             bbox = np.array([(x1), (y1), (x2), (y2)], dtype=np.int64)
             bboxes.append(bbox)
 
+        # print('bboxes', bboxes)
+        # frame = annotator.result()
+        # cv2.imshow('YOLO V8', frame)
+
         for car in self.cars:
             car.update_car(bboxes)
 

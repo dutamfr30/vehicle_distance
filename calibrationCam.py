@@ -96,7 +96,7 @@ for image in images:
     dst = dst[y:y+h, x:x+w]
     # cv.imwrite('CalResult1.png', dst)
     cv.imshow('undistort2', dst)
-    cv.waitKey(0)
+    cv.waitKey(1)
 
 cv.destroyAllWindows()
 
