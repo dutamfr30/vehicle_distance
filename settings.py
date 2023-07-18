@@ -1,4 +1,4 @@
-CALIBRATION_FILE_NAME = "calibration.p"
+CALIBRATION_FILE_NAME_WEBCAM = "calibration_webcam.p"
 PERSPECTIVE_FILE_NAME = "projection.p"
 
 ORIGINAL_SIZE = 1280, 720

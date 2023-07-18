@@ -8,7 +8,7 @@ import settings
 
 n_x = 9
 n_y = 6
-# frameSize = (1440, 1080)
+frameSize = (settings.ORIGINAL_SIZE[0], settings.ORIGINAL_SIZE[1]) 
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -21,17 +21,17 @@ objp[:, :2] = np.mgrid[0:n_x, 0:n_y].T.reshape(-1, 2)
 image_points = [] # 3D point in real world space
 object_points = [] # 2D point in image plane
 
-source_path = "D:\ITK\Tugas Akhir Informatika\vehicle_detection"
+source_path = "D:/TUGAS AKHIR DUTA/vehicle_distance"
 
-images = [f for f in glob.glob(source_path+'/**/*.png')]
+images = [f for f in glob.glob(source_path+'/camera_cal_webcam/*.jpg')]
 
 found = 0
 # loop through provided images
 for image in images :
-    # print(image)
     img = cv.imread(image)
+    img = cv.resize(img, frameSize)
     cv.imshow('img', img)
-    cv.waitKey(500)
+    cv.waitKey(0)
     print(image)
     img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
    
@@ -53,13 +53,14 @@ for image in images :
 print("number of images used for calibration:", found)
 
 # perform the calibration
-ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(object_points, image_points, img_gray.shape[::-1], None, None)
+ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(object_points, image_points, 
+                                                  img_gray.shape[::-1], None, None)
 img_size = img.shape
 print("Camera Calibrated: ", ret)
 print("\nCamera Matrix:\n", mtx)
 print("\nDistortion Parameters:\n", dist)
 print("\nRotation Vectors:\n", rvecs)
-print("\nTranslatin Vectors:\n", tvecs)
+print("\nTranslation Vectors:\n", tvecs)
 
 # Transformation the matrix distortion coefficients to writeable lists
 data = {'camera_matrix': np.asarray(mtx).tolist(), 'dist_coeffs': np.asarray(dist).tolist()}
@@ -67,14 +68,14 @@ print(mtx)
 print(dist)
 
 # save data with yaml
-with open("calibration_matrix.yaml", "w") as f:
+with open("webcam_calibration_matrix.yaml", "w") as f:
     yaml.dump(data, f)
 
 # pickle the data and save it to a file to used in perspective transform
 calib_data = {'cam_matrix': mtx, 
               'dist_coeffs': dist,
               'img_size': img_size}
-with open(settings.CALIBRATION_FILE_NAME, "wb") as f:
+with open(settings.CALIBRATION_FILE_NAME_WEBCAM, "wb") as f:
     pickle.dump(calib_data, f)
 
 # Undistortion
@@ -87,14 +88,14 @@ for image in images:
     # Undistort
     dst = cv.undistort(img, mtx, dist, None, newCameraMatrix)
     cv.imshow('undistort', dst)
-    cv.waitKey(500)
+    cv.waitKey(0)
 
     # Crop the image
     x, y, w, h = roi
     dst = dst[y:y+h, x:x+w]
     # cv.imwrite('CalResult1.png', dst)
     cv.imshow('undistort2', dst)
-    cv.waitKey(0)
+    cv.waitKey(1)
 
 cv.destroyAllWindows()
 
@@ -116,3 +117,4 @@ cv.destroyAllWindows()
 
 # print("\ntotal error: {}".format(mean_error/len(object_points)))
 # print("\n\n\n")
+
